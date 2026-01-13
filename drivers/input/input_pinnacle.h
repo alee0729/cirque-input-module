@@ -9,7 +9,6 @@
 
 #define PINNACLE_AUTOINC 0xFC
 #define PINNACLE_FILLER 0xFB
-#define PINNACLE_WAKE_FILLER 0xF7
 
 // Registers
 #define PINNACLE_FW_ID 0x00   // ASIC ID.
@@ -18,19 +17,11 @@
 #define PINNACLE_STATUS1_SW_DR BIT(2)
 #define PINNACLE_STATUS1_SW_CC BIT(3)
 #define PINNACLE_SYS_CFG 0x03 // Contains system operation and configuration bits.
-
-#define PINNACLE_SYS_CFG_RESET_BIT 0
-#define PINNACLE_SYS_CFG_SHUTDOWN_BIT 1
 #define PINNACLE_SYS_CFG_EN_SLEEP_BIT 2
-#define PINNACLE_SYS_CFG_WAKE_UP_TOGGLE_BIT 6
-#define PINNACLE_SYS_CFG_FORCE_WAKE_UP_BIT 7
-
-#define PINNACLE_SYS_CFG_RESET BIT(PINNACLE_SYS_CFG_RESET_BIT)
-#define PINNACLE_SYS_CFG_SHUTDOWN BIT(PINNACLE_SYS_CFG_SHUTDOWN_BIT)
-#define PINNACLE_SYS_CFG_EN_SLEEP BIT(PINNACLE_SYS_CFG_EN_SLEEP_BIT)
-
-#define PINNACLE_SYS_CFG_WAKE_UP_TOGGLE BIT(PINNACLE_SYS_CFG_WAKE_UP_TOGGLE_BIT)
-#define PINNACLE_SYS_CFG_FORCE_WAKE_UP BIT(PINNACLE_SYS_CFG_FORCE_WAKE_UP_BIT)
+#define PINNACLE_SYS_CFG_EN_SLEEP BIT(2)
+#define PINNACLE_SYS_CFG_SHUTDOWN_BIT 1
+#define PINNACLE_SYS_CFG_SHUTDOWN BIT(1)
+#define PINNACLE_SYS_CFG_RESET BIT(0)
 
 #define PINNACLE_FEED_CFG1 0x04 // Contains feed operation and configuration bits.
 #define PINNACLE_FEED_CFG1_EN_FEED BIT(0)
@@ -85,7 +76,6 @@
 struct pinnacle_data {
     uint8_t btn_cache;
     bool in_int;
-    bool sleep_enabled;
     const struct device *dev;
     struct gpio_callback gpio_cb;
     struct k_work work;
@@ -111,7 +101,7 @@ struct pinnacle_config {
     pinnacle_seq_read_t seq_read;
     pinnacle_write_t write;
 
-    bool rotate_90, sleep_en, no_taps;
+    bool rotate_90, sleep_en, no_taps, no_secondary_tap, x_invert, y_invert;
     enum pinnacle_sensitivity sensitivity;
     uint8_t x_axis_z_min, y_axis_z_min;
     const struct gpio_dt_spec dr;
