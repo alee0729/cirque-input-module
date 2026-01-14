@@ -307,7 +307,7 @@ static void pinnacle_report_data(const struct device *dev) {
         // the packet as z height
     }
     else {
-        zero_count = 0; // Had some movement
+        data->zero_count = 0; // Had some movement
         input_report_rel(dev, INPUT_REL_X, dx, false, K_FOREVER);
         input_report_rel(dev, INPUT_REL_Y, dy, false, K_FOREVER);
         must_send = true;
