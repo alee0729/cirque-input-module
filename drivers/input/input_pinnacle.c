@@ -273,19 +273,51 @@ static void pinnacle_report_data(const struct device *dev) {
         data->in_int = true;
     }
 
+    bool must_send = false; // Assume we don't need to generate an input event at all
+
     if (!config->no_taps && (btn || data->btn_cache)) {
         for (int i = 0; i < 3; i++) {
             uint8_t btn_val = btn & BIT(i);
             if (btn_val != (data->btn_cache & BIT(i))) {
                 input_report_key(dev, INPUT_BTN_0 + i, btn_val ? 1 : 0, false, K_FOREVER);
+                must_send = true;
             }
         }
     }
 
     data->btn_cache = btn;
 
-    input_report_rel(dev, INPUT_REL_X, dx, false, K_FOREVER);
-    input_report_rel(dev, INPUT_REL_Y, dy, true, K_FOREVER);
+    int32_t is_touching = 1;
+
+    if (dx == 0 && dy == 0) {
+        // per the datasheet in relative mode 0,0 movement means 'no touch detected'.  We recieve a message every 10ms, so if we recieve
+        // 3 consecutive perfect 0,0 messages we can be pretty sure the user has lifted their finger.
+        data->zero_count++;
+        if (data->zero_count >= 3) { // FIXME, let user customize this threshold via the device tree?
+            is_touching = 0;
+            if (data->zero_count == 3) {
+                LOG_DBG("Touch release detected");
+                must_send = true;
+            }
+            data->zero_count = 4; // prevent overflow
+        }
+
+        // FIXME - If this turns out to be insufficient in real world,
+        // usage we'll need to change the device into absolute mode (and do our own tap detection?).  In that mode touch info is included in
+        // the packet as z height
+    }
+    else {
+        zero_count = 0; // Had some movement
+        input_report_rel(dev, INPUT_REL_X, dx, false, K_FOREVER);
+        input_report_rel(dev, INPUT_REL_Y, dy, false, K_FOREVER);
+        must_send = true;
+    }
+
+    if(must_send)
+    {
+        // Finalize the input event only if we have something to report
+        input_report_key(dev, INPUT_BTN_TOUCH, is_touching, true, K_FOREVER);
+    } 
 
     return;
 }

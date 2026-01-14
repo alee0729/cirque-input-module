@@ -76,6 +76,7 @@
 struct pinnacle_data {
     uint8_t btn_cache;
     bool in_int;
+    uint8_t zero_count;
     const struct device *dev;
     struct gpio_callback gpio_cb;
     struct k_work work;
