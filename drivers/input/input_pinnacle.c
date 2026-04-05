@@ -129,7 +129,7 @@ static int pinnacle_spi_write(const struct device *dev, const uint8_t addr, cons
 static int set_int(const struct device *dev, const bool en) {
     const struct pinnacle_config *config = dev->config;
     int ret = gpio_pin_interrupt_configure_dt(&config->dr,
-                                              en ? GPIO_INT_LEVEL_ACTIVE : GPIO_INT_DISABLE);
+                                              en ? GPIO_INT_EDGE_TO_ACTIVE : GPIO_INT_DISABLE);
     if (ret < 0) {
         LOG_ERR("can't set interrupt");
     }
@@ -451,16 +451,6 @@ static void pinnacle_work_cb(struct k_work *work) {
     // permanently disabling data-ready notifications.
     pinnacle_clear_status(dev);
 
-    // Guard: if DR is still asserted after clearing status, the device is in
-    // a bad state (e.g. woke from shutdown before oscillator stabilized).
-    // Do NOT re-enable the level-triggered interrupt — it would re-fire
-    // immediately, creating an infinite loop that starves the system workqueue
-    // and blocks all processing including keyboard key events.
-    if (gpio_pin_get_dt(&config->dr)) {
-        LOG_ERR("DR still asserted after status clear -- disabling interrupt");
-        return;
-    }
-
     set_int(dev, true);
 
     // Adaptive sample rate: only meaningful in modes that track absolute position
@@ -493,7 +483,6 @@ static void pinnacle_gpio_cb(const struct device *port, struct gpio_callback *cb
     struct pinnacle_data *data = CONTAINER_OF(cb, struct pinnacle_data, gpio_cb);
 
     LOG_DBG("HW DR asserted");
-    set_int(data->dev, false); // mask the int until we've handled it (now level triggered)
     k_work_submit(&data->work);
 }
 
